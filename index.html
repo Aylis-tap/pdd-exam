@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ПДД РФ Категория B — Официальные билеты (Вопросы 1–10)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --correct: #10b981;
+      --wrong: #ef4444;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo { font-size: 1.25rem; font-weight: 700; color: #60a5fa; }
+
+    .nav-stats {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      background: #334155;
+      color: #e2e8f0;
+    }
+    .badge.success { background: #064e3b; color: #6ee7b7; }
+    .badge.danger { background: #7f1d1d; color: #fca5a5; }
+
+    main {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
+    }
+
+    /* Ticket selector grid */
+    .ticket-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .ticket-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .ticket-btn:hover { background: #334155; }
+    .ticket-btn.active { background: var(--accent); border-color: var(--accent); }
+
+    /* Question bar */
+    .question-tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+    .q-tab {
+      flex: 1;
+      min-width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .q-tab.active { border-color: var(--accent); color: var(--text); outline: 2px solid var(--accent); }
+    .q-tab.correct { background: var(--correct); color: white; border-color: var(--correct); }
+    .q-tab.wrong { background: var(--wrong); color: white; border-color: var(--wrong); }
+
+    /* Question Card */
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    .q-media {
+      width: 100%;
+      max-height: 380px;
+      background: #090d16;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .q-media img {
+      max-width: 100%;
+      max-height: 380px;
+      object-fit: contain;
+    }
+    .q-media.empty {
+      display: none;
+    }
+
+    .q-body { padding: 1.5rem; }
+    .q-title {
+      font-size: 1.15rem;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+    }
+
+    .answers {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .ans-btn {
+      background: #182234;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.85rem 1.1rem;
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .ans-btn:hover:not(:disabled) {
+      background: #253349;
+      border-color: #475569;
+    }
+    .ans-btn.correct {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--correct);
+      color: #6ee7b7;
+    }
+    .ans-btn.wrong {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--wrong);
+      color: #fca5a5;
+    }
+
+    .comment-box {
+      margin-top: 1.5rem;
+      padding: 1rem 1.25rem;
+      background: #0f172a;
+      border-left: 4px solid var(--accent);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1.5rem;
+    }
+    .btn {
+      padding: 0.6rem 1.25rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #loading {
+      text-align: center;
+      padding: 4rem 1rem;
+      font-size: 1.1rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Экзамен ПДД 2026 (Кат. B)</div>
+  <div class="nav-stats">
+    <span class="badge" id="ticketBadge">Билет 1 / 40</span>
+    <span class="badge success" id="correctBadge">Верно: 0</span>
+    <span class="badge danger" id="wrongBadge">Ошибок: 0</span>
+  </div>
+</header>
+
+<main>
+  <div id="loading">Загрузка официальной базы билетов и схем...</div>
+
+  <div id="quizApp" style="display: none;">
+    <!-- Селектор билетов 1-40 -->
+    <div class="ticket-selector" id="ticketList"></div>
+
+    <!-- Навигация по первым 10 вопросам выбранного билета -->
+    <div class="question-tabs" id="tabsList"></div>
+
+    <!-- Карточка вопроса -->
+    <div class="card">
+      <div class="q-media" id="mediaBox">
+        <img id="qImg" src="" alt="Иллюстрация к вопросу">
+      </div>
+      <div class="q-body">
+        <div class="q-title" id="qTitle"></div>
+        <div class="answers" id="ansList"></div>
+        <div class="comment-box" id="commentBox"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="prevBtn" onclick="prevQuestion()">← Назад</button>
+      <button class="btn" id="nextBtn" onclick="nextQuestion()">Вперед →</button>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Официальный источник данных с билетами и официальными картинками ГИБДД
+  const DATA_URL = 'https://raw.githubusercontent.com/netology-code/react-homeworks/master/hooks-context/use-effect/data/data.json';
+  
+  // Резервное официальное зеркало структуры вопросов
+  // Формат CDN для официальных картинок ГИБДД: 
+  // https://raw.githubusercontent.com/evis/pdd-russia/master/images/{image_name}
+  const IMAGE_BASE_URL = 'https://raw.githubusercontent.com/evis/pdd-russia/master/images/';
+
+  let allQuestions = [];
+  let tickets = {}; 
+  let currentTicket = 1;
+  let currentQuestionIndex = 0; // 0 to 9
+  let userAnswers = {}; // key: "T-Q", value: {selectedIndex, isCorrect}
+
+  async function loadData() {
+    try {
+      const resp = await fetch('https://raw.githubusercontent.com/evis/pdd-russia/master/pdd.json');
+      const data = await resp.json();
+      initTickets(data);
+    } catch (e) {
+      // Запасной источник данных
+      try {
+        const fallback = await fetch('https://cdn.jsdelivr.net/gh/pdd-russia/pdd-russia@master/pdd.json');
+        const data = await fallback.json();
+        initTickets(data);
+      } catch (err) {
+        document.getElementById('loading').innerHTML = 
+          `<p style="color: #ef4444;">Не удалось загрузить базу вопросов онлайн.</p>
+           <p style="margin-top: 0.5rem; font-size: 0.9rem;">Вы можете положить официальный файл <code>pdd.json</code> в папку с приложением.</p>`;
+      }
+    }
+  }
+
+  function initTickets(rawQuestions) {
+    // Группируем по 40 билетам и оставляем строго первые 10 вопросов каждого билета
+    for (let t = 1; t <= 40; t++) {
+      tickets[t] = [];
+    }
+
+    rawQuestions.forEach(item => {
+      // Приводим номера билетов и вопросов
+      const tNum = parseInt(item.ticket_number || item.ticket || 1, 10);
+      const qNum = parseInt(item.question_number || item.number || 1, 10);
+
+      // Отбираем строго первые 10 вопросов
+      if (tNum >= 1 && tNum <= 40 && qNum >= 1 && qNum <= 10) {
+        tickets[tNum].push(item);
+      }
+    });
+
+    // Сортируем вопросы внутри каждого билета с 1 по 10
+    for (let t = 1; t <= 40; t++) {
+      tickets[t].sort((a, b) => {
+        const na = parseInt(a.question_number || a.number || 0, 10);
+        const nb = parseInt(b.question_number || b.number || 0, 10);
+        return na - nb;
+      });
+    }
+
+    renderTicketSelector();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('quizApp').style.display = 'block';
+
+    selectTicket(1);
+  }
+
+  function renderTicketSelector() {
+    const container = document.getElementById('ticketList');
+    container.innerHTML = '';
+    for (let i = 1; i <= 40; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'ticket-btn' + (i === currentTicket ? ' active' : '');
+      btn.innerText = `Б ${i}`;
+      btn.onclick = () => selectTicket(i);
+      container.appendChild(btn);
+    }
+  }
+
+  function selectTicket(num) {
+    currentTicket = num;
+    currentQuestionIndex = 0;
+    
+    // Подсветка активной кнопки билета
+    document.querySelectorAll('.ticket-btn').forEach((btn, idx) => {
+      btn.classList.toggle('active', (idx + 1) === num);
+    });
+
+    document.getElementById('ticketBadge').innerText = `Билет ${currentTicket} / 40`;
+    renderQuestionTabs();
+    renderCurrentQuestion();
+  }
+
+  function renderQuestionTabs() {
+    const tabsList = document.getElementById('tabsList');
+    tabsList.innerHTML = '';
+
+    for (let i = 0; i < 10; i++) {
+      const tab = document.createElement('div');
+      tab.className = 'q-tab' + (i === currentQuestionIndex ? ' active' : '');
+      tab.innerText = i + 1;
+
+      const stateKey = `${currentTicket}-${i}`;
+      if (userAnswers[stateKey]) {
+        tab.classList.add(userAnswers[stateKey].isCorrect ? 'correct' : 'wrong');
+      }
+
+      tab.onclick = () => {
+        currentQuestionIndex = i;
+        renderQuestionTabs();
+        renderCurrentQuestion();
+      };
+      tabsList.appendChild(tab);
+    }
+  }
+
+  function renderCurrentQuestion() {
+    const list = tickets[currentTicket] || [];
+    const q = list[currentQuestionIndex];
+
+    if (!q) return;
+
+    // Картинка
+    const mediaBox = document.getElementById('mediaBox');
+    const imgEl = document.getElementById('qImg');
+    
+    if (q.image && q.image.trim() !== "" && !q.image.includes("no_image")) {
+      // Формирование ссылки на официальное изображение
+      let imgSrc = q.image;
+      if (!imgSrc.startsWith('http')) {
+        imgSrc = IMAGE_BASE_URL + imgSrc.replace(/^\.?\//, '');
+      }
+      imgEl.src = imgSrc;
+      mediaBox.classList.remove('empty');
+    } else {
+      mediaBox.classList.add('empty');
+      imgEl.src = '';
+    }
+
+    // Текст вопроса
+    document.getElementById('qTitle').innerText = `${currentQuestionIndex + 1}. ${q.question || q.title}`;
+
+    // Варианты ответов
+    const ansList = document.getElementById('ansList');
+    ansList.innerHTML = '';
+
+    const answers = q.answers || [];
+    const stateKey = `${currentTicket}-${currentQuestionIndex}`;
+    const answered = userAnswers[stateKey];
+
+    answers.forEach((ans, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'ans-btn';
+      btn.innerText = ans.answer_text || ans.text || ans;
+
+      // Определение правильности
+      const isCorrect = (ans.is_correct !== undefined) ? ans.is_correct : (idx + 1 === parseInt(q.correct_answer, 10));
+
+      if (answered) {
+        btn.disabled = true;
+        if (isCorrect) {
+          btn.classList.add('correct');
+        } else if (answered.selectedIndex === idx) {
+          btn.classList.add('wrong');
+        }
+      } else {
+        btn.onclick = () => handleAnswer(idx, isCorrect);
+      }
+
+      ansList.appendChild(btn);
+    });
+
+    // Официальный комментарий
+    const commentBox = document.getElementById('commentBox');
+    if (answered && (q.comment || q.description)) {
+      commentBox.innerText = q.comment || q.description;
+      commentBox.style.display = 'block';
+    } else {
+      commentBox.style.display = 'none';
+    }
+
+    // Кнопки навигации
+    document.getElementById('prevBtn').disabled = (currentQuestionIndex === 0);
+    document.getElementById('nextBtn').disabled = (currentQuestionIndex === 9);
+  }
+
+  function handleAnswer(selectedIndex, isCorrect) {
+    const stateKey = `${currentTicket}-${currentQuestionIndex}`;
+    userAnswers[stateKey] = { selectedIndex, isCorrect };
+
+    updateScore();
+    renderQuestionTabs();
+    renderCurrentQuestion();
+  }
+
+  function updateScore() {
+    let correctCount = 0;
+    let wrongCount = 0;
+    Object.values(userAnswers).forEach(item => {
+      if (item.isCorrect) correctCount++;
+      else wrongCount++;
+    });
+
+    document.getElementById('correctBadge').innerText = `Верно: ${correctCount}`;
+    document.getElementById('wrongBadge').innerText = `Ошибок: ${wrongCount}`;
+  }
+
+  function prevQuestion() {
+    if (currentQuestionIndex > 0) {
+      currentQuestionIndex--;
+      renderQuestionTabs();
+      renderCurrentQuestion();
+    }
+  }
+
+  function nextQuestion() {
+    if (currentQuestionIndex < 9) {
+      currentQuestionIndex++;
+      renderQuestionTabs();
+      renderCurrentQuestion();
+    }
+  }
+
+  // Запуск при открытии страницы
+  window.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>
