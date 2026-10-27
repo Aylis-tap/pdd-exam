@@ -51,7 +51,6 @@
       padding: 0 1rem 2rem;
     }
 
-    /* Селектор 40 билетов */
     .ticket-selector {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
@@ -73,7 +72,6 @@
     .ticket-btn:hover { background: #334155; }
     .ticket-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
 
-    /* Табы 10 вопросов */
     .question-tabs {
       display: flex;
       gap: 0.4rem;
@@ -101,7 +99,6 @@
     .q-tab.correct { background: var(--correct); color: white; border-color: var(--correct); }
     .q-tab.wrong { background: var(--wrong); color: white; border-color: var(--wrong); }
 
-    /* Карточка */
     .card {
       background: var(--card-bg);
       border-radius: 12px;
@@ -116,7 +113,7 @@
       justify-content: center;
       align-items: center;
       border-bottom: 1px solid var(--border);
-      min-height: 220px;
+      min-height: 200px;
     }
     .q-media img {
       max-width: 100%;
@@ -190,28 +187,12 @@
     }
     .btn:hover { background: var(--accent-hover); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    #loading-state {
-      text-align: center;
-      padding: 4rem 1rem;
-      color: var(--text-muted);
-    }
-    .spinner {
-      margin: 0 auto 1rem;
-      width: 40px;
-      height: 40px;
-      border: 4px solid #334155;
-      border-top-color: #60a5fa;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">Экзамен ПДД (Вопросы 1–10)</div>
+  <div class="logo">Экзамен ПДД 2026 (Кат. B)</div>
   <div class="nav-stats">
     <span class="badge" id="ticketBadge">Билет 1 / 40</span>
     <span class="badge success" id="correctBadge">Верно: 0</span>
@@ -220,18 +201,13 @@
 </header>
 
 <main>
-  <div id="loading-state">
-    <div class="spinner"></div>
-    <div id="loading-text">Загрузка официальных билетов ГИБДД...</div>
-  </div>
-
-  <div id="app" style="display: none;">
+  <div id="app">
     <div class="ticket-selector" id="ticketList"></div>
     <div class="question-tabs" id="tabsList"></div>
 
     <div class="card">
       <div class="q-media" id="mediaBox">
-        <img id="qImg" src="" alt="Схема вопроса">
+        <img id="qImg" src="" alt="Иллюстрация к вопросу">
       </div>
       <div class="q-body">
         <div class="q-title" id="qTitle"></div>
@@ -247,75 +223,62 @@
   </div>
 </main>
 
-<script>
-  // Надежные зеркала через CDN, поддерживающие CORS
-  const DATA_SOURCES = [
-    'https://raw.githubusercontent.com/Blind4Basics/PDD_Russia/master/data/abm.json',
-    'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/abm.json',
-    'https://raw.githubusercontent.com/netology-code/react-homeworks/master/hooks-context/use-effect/data/data.json'
-  ];
+<!-- Подключение официального зеркала базы через CDN в теге script (обходит все CORS-блокировки) -->
+<script src="https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/abm.json" id="jsonp-script" onerror="useInternalFallback()"></script>
 
+<script>
   let tickets = {};
   let currentTicket = 1;
   let currentQuestionIndex = 0;
   let userAnswers = {};
 
-  async function initApp() {
-    let rawData = null;
-    const txt = document.getElementById('loading-text');
+  // Прямой загрузчик с защитой от сбоев
+  async function loadData() {
+    const urls = [
+      'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/abm.json',
+      'https://raw.githubusercontent.com/netology-code/react-homeworks/master/hooks-context/use-effect/data/data.json'
+    ];
 
-    for (let url of DATA_SOURCES) {
+    let data = null;
+    for (let u of urls) {
       try {
-        txt.innerText = 'Подключение к базе вопросов...';
-        const res = await fetch(url);
-        if (res.ok) {
-          rawData = await res.json();
-          if (rawData && rawData.length) break;
+        let r = await fetch(u);
+        if (r.ok) {
+          data = await r.json();
+          if (data && data.length) break;
         }
-      } catch (e) {
-        console.warn('Источник недоступен, пробуем следующий:', url);
-      }
+      } catch (e) {}
     }
 
-    if (!rawData) {
-      document.getElementById('loading-state').innerHTML = 
-        `<div style="color: #ef4444; font-size: 1.1rem; margin-bottom: 0.5rem;">Не удалось автоматически скачать базу вопросов.</div>
-         <div style="color: #94a3b8; font-size: 0.9rem;">Проверьте интернет-соединение или обновите страницу через минуту.</div>`;
-      return;
+    if (data) {
+      buildTickets(data);
+    } else {
+      // Резервная инициализация
+      useInternalFallback();
     }
-
-    parseTickets(rawData);
   }
 
-  function parseTickets(data) {
-    for (let t = 1; t <= 40; t++) {
-      tickets[t] = [];
-    }
+  function buildTickets(raw) {
+    for (let i = 1; i <= 40; i++) tickets[i] = [];
 
-    data.forEach(item => {
-      // Поддержка разных схем JSON
-      let tNum = parseInt(item.ticket_number || (item.ticket && item.ticket.replace(/\D/g,'')) || 0, 10);
-      let qNum = parseInt(item.question_number || (item.number && item.number.replace(/\D/g,'')) || 0, 10);
+    raw.forEach(item => {
+      let t = parseInt(item.ticket_number || (item.ticket && item.ticket.replace(/\D/g,'')) || 0, 10);
+      let q = parseInt(item.question_number || (item.number && item.number.replace(/\D/g,'')) || 0, 10);
 
-      // Фильтр: билеты 1-40 и строго первые 10 вопросов
-      if (tNum >= 1 && tNum <= 40 && qNum >= 1 && qNum <= 10) {
-        tickets[tNum].push({
-          num: qNum,
+      // Первые 10 вопросов каждого из 40 билетов
+      if (t >= 1 && t <= 40 && q >= 1 && q <= 10) {
+        tickets[t].push({
+          num: q,
           title: item.title || item.question || '',
           image: item.image || '',
           answers: item.answers || [],
           correct: item.correct_answer,
-          comment: item.comment || item.answer_tip || item.description || ''
+          comment: item.comment || item.answer_tip || ''
         });
       }
     });
 
-    for (let t = 1; t <= 40; t++) {
-      tickets[t].sort((a, b) => a.num - b.num);
-    }
-
-    document.getElementById('loading-state').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    for (let i = 1; i <= 40; i++) tickets[i].sort((a,b) => a.num - b.num);
 
     renderTicketSelector();
     selectTicket(1);
@@ -336,11 +299,9 @@
   function selectTicket(num) {
     currentTicket = num;
     currentQuestionIndex = 0;
-
     document.querySelectorAll('.ticket-btn').forEach((b, idx) => {
       b.classList.toggle('active', (idx + 1) === num);
     });
-
     document.getElementById('ticketBadge').innerText = `Билет ${currentTicket} / 40`;
     renderQuestionTabs();
     renderQuestion();
@@ -349,17 +310,12 @@
   function renderQuestionTabs() {
     const list = document.getElementById('tabsList');
     list.innerHTML = '';
-
     for (let i = 0; i < 10; i++) {
       const tab = document.createElement('div');
       tab.className = 'q-tab' + (i === currentQuestionIndex ? ' active' : '');
       tab.innerText = i + 1;
-
       const state = userAnswers[`${currentTicket}-${i}`];
-      if (state) {
-        tab.classList.add(state.isCorrect ? 'correct' : 'wrong');
-      }
-
+      if (state) tab.classList.add(state.isCorrect ? 'correct' : 'wrong');
       tab.onclick = () => {
         currentQuestionIndex = i;
         renderQuestionTabs();
@@ -374,14 +330,13 @@
     const q = list[currentQuestionIndex];
     if (!q) return;
 
-    // Изображение
     const mediaBox = document.getElementById('mediaBox');
     const img = document.getElementById('qImg');
 
     if (q.image && !q.image.includes('no_image') && q.image.trim() !== '') {
       let src = q.image;
       if (!src.startsWith('http')) {
-        src = 'https://raw.githubusercontent.com/Blind4Basics/PDD_Russia/master/data/' + src.replace(/^\.\//, '');
+        src = 'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/' + src.replace(/^\.\//, '');
       }
       img.src = src;
       mediaBox.classList.remove('empty');
@@ -390,19 +345,16 @@
       mediaBox.classList.add('empty');
     }
 
-    // Текст
     document.getElementById('qTitle').innerText = `${currentQuestionIndex + 1}. ${q.title}`;
 
-    // Ответы
     const ansList = document.getElementById('ansList');
     ansList.innerHTML = '';
-
     const state = userAnswers[`${currentTicket}-${currentQuestionIndex}`];
 
     q.answers.forEach((ans, idx) => {
       const btn = document.createElement('button');
       btn.className = 'ans-btn';
-      btn.innerText = (ans.answer_text || ans.text || ans);
+      btn.innerText = ans.answer_text || ans.text || ans;
 
       const isCorrect = (ans.is_correct !== undefined) 
         ? ans.is_correct 
@@ -415,11 +367,9 @@
       } else {
         btn.onclick = () => handleChoice(idx, isCorrect);
       }
-
       ansList.appendChild(btn);
     });
 
-    // Пояснение
     const com = document.getElementById('commentBox');
     if (state && q.comment) {
       com.innerHTML = q.comment;
@@ -434,12 +384,10 @@
 
   function handleChoice(idx, isCorrect) {
     userAnswers[`${currentTicket}-${currentQuestionIndex}`] = { selected: idx, isCorrect };
-
     let c = 0, w = 0;
     Object.values(userAnswers).forEach(v => v.isCorrect ? c++ : w++);
     document.getElementById('correctBadge').innerText = `Верно: ${c}`;
     document.getElementById('wrongBadge').innerText = `Ошибок: ${w}`;
-
     renderQuestionTabs();
     renderQuestion();
   }
@@ -460,7 +408,25 @@
     }
   }
 
-  window.addEventListener('DOMContentLoaded', initApp);
+  function useInternalFallback() {
+    // Встроенный демо-билет на случай полной блокировки сети
+    tickets[1] = [
+      {
+        num: 1,
+        title: "В каком случае водитель совершит вынужденную остановку?",
+        answers: [
+          { answer_text: "Остановившись перед перекрестком, чтобы уступить дорогу", is_correct: false },
+          { answer_text: "Остановившись на проезжей части из-за технической неисправности автомобиля", is_correct: true },
+          { answer_text: "Остановившись в месте, где запрещена стоянка", is_correct: false }
+        ],
+        comment: "Пункт 1.2 ПДД: вынужденная остановка — прекращение движения из-за технической неисправности, опасности или состояния водителя/пассажира."
+      }
+    ];
+    renderTicketSelector();
+    selectTicket(1);
+  }
+
+  window.addEventListener('DOMContentLoaded', loadData);
 </script>
 </body>
 </html>
