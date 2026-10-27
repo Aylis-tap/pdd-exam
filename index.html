@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Экзамен ПДД 2026 (Кат. B) — Вопросы 1–10</title>
+  <title>Экзамен ПДД 2026 (Кат. B) — Вопросы 1–10 из всех 40 билетов</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -193,23 +193,12 @@
       padding: 4rem 1rem;
       color: var(--text-muted);
     }
-    .loader {
-      display: inline-block;
-      width: 32px;
-      height: 32px;
-      border: 3px solid #334155;
-      border-radius: 50%;
-      border-top-color: #3b82f6;
-      animation: spin 1s ease-in-out infinite;
-      margin-bottom: 1rem;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">Экзамен ПДД 2026 (Кат. B)</div>
+  <div class="logo">Экзамен ПДД (Вопросы 1–10 из всех 40 билетов)</div>
   <div class="nav-stats">
     <span class="badge" id="ticketBadge">Билет 1 / 40</span>
     <span class="badge success" id="correctBadge">Верно: 0</span>
@@ -218,10 +207,7 @@
 </header>
 
 <main>
-  <div id="loading-state">
-    <div class="loader"></div>
-    <div id="loading-msg">Загрузка официальных билетов...</div>
-  </div>
+  <div id="loading-state">Загрузка официальной базы ГИБДД...</div>
 
   <div id="app" style="display: none;">
     <div class="ticket-selector" id="ticketList"></div>
@@ -251,64 +237,30 @@
   let currentQuestionIndex = 0;
   let userAnswers = {};
 
-  const TARGET_URL = 'https://raw.githubusercontent.com/Blind4Basics/PDD_Russia/master/data/abm.json';
-
-  async function loadData() {
-    const msg = document.getElementById('loading-msg');
-    let raw = null;
-
-    // Способ 1: Прямой запрос
-    try {
-      msg.innerText = 'Загрузка официальной базы (попытка 1)...';
-      const r = await fetch(TARGET_URL);
-      if (r.ok) raw = await r.json();
-    } catch (e) {}
-
-    // Способ 2: Через прокси-шлюз AllOrigins (обходит любые CORS-блокировки)
-    if (!raw) {
-      try {
-        msg.innerText = 'Подключение через CORS-шлюз...';
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_URL)}`;
-        const r = await fetch(proxyUrl);
-        if (r.ok) raw = await r.json();
-      } catch (e) {}
-    }
-
-    // Способ 3: Через второй открытый шлюз corsproxy
-    if (!raw) {
-      try {
-        msg.innerText = 'Резервный канал загрузки...';
-        const proxyUrl2 = `https://corsproxy.io/?url=${encodeURIComponent(TARGET_URL)}`;
-        const r = await fetch(proxyUrl2);
-        if (r.ok) raw = await r.json();
-      } catch (e) {}
-    }
-
-    if (!raw || !Array.isArray(raw)) {
-      document.getElementById('loading-state').innerHTML = 
-        '<span style="color:#ef4444">Не удалось подключиться к серверу с вопросами. Попробуйте обновить страницу еще раз.</span>';
-      return;
-    }
+  // Функция обратного вызова JSONP: загружает официальную базу без каких-либо сетевых ошибок CORS
+  window.initPDD = function(data) {
+    if (!data || !Array.isArray(data)) return;
 
     for (let t = 1; t <= 40; t++) {
       tickets[t] = [];
     }
 
-    raw.forEach(item => {
+    data.forEach(item => {
+      // Номер билета
       let t = 0;
       if (item.ticket_number) t = parseInt(item.ticket_number, 10);
-      else if (item.ticket) t = parseInt(item.ticket.replace(/\D/g, ''), 10);
+      else if (item.ticket) t = parseInt(String(item.ticket).replace(/\D/g, ''), 10);
 
+      // Номер вопроса
       let q = 0;
       if (item.question_number) q = parseInt(item.question_number, 10);
-      else if (item.number) q = parseInt(item.number.replace(/\D/g, ''), 10);
+      else if (item.number) q = parseInt(String(item.number).replace(/\D/g, ''), 10);
 
-      // Оставляем строго 1–10 вопросы для всех 40 билетов
+      // Оставляем строго вопросы 1–10 из всех 40 билетов (всего 400 вопросов)
       if (t >= 1 && t <= 40 && q >= 1 && q <= 10) {
         let imgSrc = '';
         if (item.image && !item.image.includes('no_image') && item.image.trim() !== '') {
           let cleanImg = item.image.replace(/^\.?\//, '');
-          // Картинки берем через надежный CDN jsdelivr
           imgSrc = 'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/' + cleanImg;
         }
 
@@ -318,11 +270,12 @@
           image: imgSrc,
           answers: item.answers || [],
           correct: item.correct_answer,
-          comment: item.comment || item.answer_tip || ''
+          comment: item.comment || item.answer_tip || item.description || ''
         });
       }
     });
 
+    // Сортировка по номерам 1–10
     for (let t = 1; t <= 40; t++) {
       tickets[t].sort((a, b) => a.num - b.num);
     }
@@ -332,7 +285,7 @@
 
     renderTicketSelector();
     selectTicket(1);
-  }
+  };
 
   function renderTicketSelector() {
     const box = document.getElementById('ticketList');
@@ -387,6 +340,7 @@
     const q = list[currentQuestionIndex];
     if (!q) return;
 
+    // Схема / картинка
     const mediaBox = document.getElementById('mediaBox');
     const img = document.getElementById('qImg');
 
@@ -398,8 +352,10 @@
       mediaBox.classList.add('empty');
     }
 
+    // Вопрос
     document.getElementById('qTitle').innerText = `${currentQuestionIndex + 1}. ${q.title}`;
 
+    // Варианты ответов
     const ansList = document.getElementById('ansList');
     ansList.innerHTML = '';
     const state = userAnswers[`${currentTicket}-${currentQuestionIndex}`];
@@ -407,7 +363,7 @@
     q.answers.forEach((ans, idx) => {
       const btn = document.createElement('button');
       btn.className = 'ans-btn';
-      btn.innerText = ans.answer_text || ans.text || ans;
+      btn.innerText = (ans.answer_text || ans.text || ans);
 
       const isCorrect = (ans.is_correct !== undefined) 
         ? ans.is_correct 
@@ -424,6 +380,7 @@
       ansList.appendChild(btn);
     });
 
+    // Официальное пояснение
     const com = document.getElementById('commentBox');
     if (state && q.comment) {
       com.innerHTML = q.comment;
@@ -463,8 +420,23 @@
       renderQuestion();
     }
   }
+</script>
 
-  window.addEventListener('DOMContentLoaded', loadData);
+<!-- Безопасное подключение базы через GitHub API без блокировок -->
+<script src="https://api.github.com/repos/Blind4Basics/PDD_Russia/contents/data/abm.json?callback=loadViaApi"></script>
+
+<script>
+  function loadViaApi(response) {
+    try {
+      const jsonStr = decodeURIComponent(escape(atob(response.data.content)));
+      const data = JSON.parse(jsonStr);
+      window.initPDD(data);
+    } catch (e) {
+      console.error(e);
+      document.getElementById('loading-state').innerHTML = 
+        '<span style="color:#ef4444">Ошибка разбора данных. Попробуйте обновить страницу.</span>';
+    }
+  }
 </script>
 </body>
 </html>
