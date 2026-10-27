@@ -113,11 +113,11 @@
       justify-content: center;
       align-items: center;
       border-bottom: 1px solid var(--border);
-      min-height: 200px;
+      min-height: 220px;
     }
     .q-media img {
       max-width: 100%;
-      max-height: 380px;
+      max-height: 360px;
       display: block;
       object-fit: contain;
     }
@@ -187,6 +187,12 @@
     }
     .btn:hover { background: var(--accent-hover); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #loading-state {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
@@ -201,7 +207,9 @@
 </header>
 
 <main>
-  <div id="app">
+  <div id="loading-state">Загрузка всех 40 официальных билетов...</div>
+
+  <div id="app" style="display: none;">
     <div class="ticket-selector" id="ticketList"></div>
     <div class="question-tabs" id="tabsList"></div>
 
@@ -223,65 +231,68 @@
   </div>
 </main>
 
-<!-- Подключение официального зеркала базы через CDN в теге script (обходит все CORS-блокировки) -->
-<script src="https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/abm.json" id="jsonp-script" onerror="useInternalFallback()"></script>
-
 <script>
   let tickets = {};
   let currentTicket = 1;
   let currentQuestionIndex = 0;
   let userAnswers = {};
 
-  // Прямой загрузчик с защитой от сбоев
-  async function loadData() {
-    const urls = [
-      'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/abm.json',
-      'https://raw.githubusercontent.com/netology-code/react-homeworks/master/hooks-context/use-effect/data/data.json'
-    ];
+  // Прямой запрос к репозиторию с гарантированной разблокировкой CORS через jsDelivr
+  async function loadQuestions() {
+    for (let t = 1; t <= 40; t++) {
+      tickets[t] = [];
+    }
 
-    let data = null;
-    for (let u of urls) {
-      try {
-        let r = await fetch(u);
-        if (r.ok) {
-          data = await r.json();
-          if (data && data.length) break;
+    try {
+      // Рабочее открытое зеркало с полными билетами и официальными картинками
+      const res = await fetch('https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/abm.json');
+      const data = await res.json();
+
+      data.forEach(item => {
+        // Извлекаем номер билета и вопроса из полей "Билет 1" или чисел
+        let t = 0;
+        if (item.ticket_number) t = parseInt(item.ticket_number, 10);
+        else if (item.ticket) t = parseInt(item.ticket.replace(/\D/g, ''), 10);
+
+        let q = 0;
+        if (item.question_number) q = parseInt(item.question_number, 10);
+        else if (item.number) q = parseInt(item.number.replace(/\D/g, ''), 10);
+
+        // Отбираем строго первые 10 вопросов из 40 билетов
+        if (t >= 1 && t <= 40 && q >= 1 && q <= 10) {
+          // Формирование ссылки на картинку
+          let imgSrc = '';
+          if (item.image && !item.image.includes('no_image') && item.image.trim() !== '') {
+            let cleanImg = item.image.replace(/^\.?\//, '');
+            imgSrc = 'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/' + cleanImg;
+          }
+
+          tickets[t].push({
+            num: q,
+            title: item.title || item.question || '',
+            image: imgSrc,
+            answers: item.answers || [],
+            correct: item.correct_answer,
+            comment: item.comment || item.answer_tip || ''
+          });
         }
-      } catch (e) {}
-    }
+      });
 
-    if (data) {
-      buildTickets(data);
-    } else {
-      // Резервная инициализация
-      useInternalFallback();
-    }
-  }
-
-  function buildTickets(raw) {
-    for (let i = 1; i <= 40; i++) tickets[i] = [];
-
-    raw.forEach(item => {
-      let t = parseInt(item.ticket_number || (item.ticket && item.ticket.replace(/\D/g,'')) || 0, 10);
-      let q = parseInt(item.question_number || (item.number && item.number.replace(/\D/g,'')) || 0, 10);
-
-      // Первые 10 вопросов каждого из 40 билетов
-      if (t >= 1 && t <= 40 && q >= 1 && q <= 10) {
-        tickets[t].push({
-          num: q,
-          title: item.title || item.question || '',
-          image: item.image || '',
-          answers: item.answers || [],
-          correct: item.correct_answer,
-          comment: item.comment || item.answer_tip || ''
-        });
+      // Сортировка вопросов с 1 по 10
+      for (let t = 1; t <= 40; t++) {
+        tickets[t].sort((a, b) => a.num - b.num);
       }
-    });
 
-    for (let i = 1; i <= 40; i++) tickets[i].sort((a,b) => a.num - b.num);
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
 
-    renderTicketSelector();
-    selectTicket(1);
+      renderTicketSelector();
+      selectTicket(1);
+    } catch (e) {
+      console.error(e);
+      document.getElementById('loading-state').innerHTML = 
+        '<span style="color:#ef4444">Ошибка загрузки базы. Проверьте соединение с интернетом и обновите страницу.</span>';
+    }
   }
 
   function renderTicketSelector() {
@@ -299,9 +310,11 @@
   function selectTicket(num) {
     currentTicket = num;
     currentQuestionIndex = 0;
+
     document.querySelectorAll('.ticket-btn').forEach((b, idx) => {
       b.classList.toggle('active', (idx + 1) === num);
     });
+
     document.getElementById('ticketBadge').innerText = `Билет ${currentTicket} / 40`;
     renderQuestionTabs();
     renderQuestion();
@@ -310,12 +323,17 @@
   function renderQuestionTabs() {
     const list = document.getElementById('tabsList');
     list.innerHTML = '';
+
     for (let i = 0; i < 10; i++) {
       const tab = document.createElement('div');
       tab.className = 'q-tab' + (i === currentQuestionIndex ? ' active' : '');
       tab.innerText = i + 1;
+
       const state = userAnswers[`${currentTicket}-${i}`];
-      if (state) tab.classList.add(state.isCorrect ? 'correct' : 'wrong');
+      if (state) {
+        tab.classList.add(state.isCorrect ? 'correct' : 'wrong');
+      }
+
       tab.onclick = () => {
         currentQuestionIndex = i;
         renderQuestionTabs();
@@ -330,25 +348,25 @@
     const q = list[currentQuestionIndex];
     if (!q) return;
 
+    // Картинка
     const mediaBox = document.getElementById('mediaBox');
     const img = document.getElementById('qImg');
 
-    if (q.image && !q.image.includes('no_image') && q.image.trim() !== '') {
-      let src = q.image;
-      if (!src.startsWith('http')) {
-        src = 'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/' + src.replace(/^\.\//, '');
-      }
-      img.src = src;
+    if (q.image) {
+      img.src = q.image;
       mediaBox.classList.remove('empty');
     } else {
       img.src = '';
       mediaBox.classList.add('empty');
     }
 
+    // Текст
     document.getElementById('qTitle').innerText = `${currentQuestionIndex + 1}. ${q.title}`;
 
+    // Варианты ответов
     const ansList = document.getElementById('ansList');
     ansList.innerHTML = '';
+
     const state = userAnswers[`${currentTicket}-${currentQuestionIndex}`];
 
     q.answers.forEach((ans, idx) => {
@@ -367,9 +385,11 @@
       } else {
         btn.onclick = () => handleChoice(idx, isCorrect);
       }
+
       ansList.appendChild(btn);
     });
 
+    // Пояснение
     const com = document.getElementById('commentBox');
     if (state && q.comment) {
       com.innerHTML = q.comment;
@@ -378,16 +398,19 @@
       com.style.display = 'none';
     }
 
+    // Состояние кнопок Назад / Вперед
     document.getElementById('prevBtn').disabled = (currentQuestionIndex === 0);
     document.getElementById('nextBtn').disabled = (currentQuestionIndex === 9);
   }
 
   function handleChoice(idx, isCorrect) {
     userAnswers[`${currentTicket}-${currentQuestionIndex}`] = { selected: idx, isCorrect };
+
     let c = 0, w = 0;
     Object.values(userAnswers).forEach(v => v.isCorrect ? c++ : w++);
     document.getElementById('correctBadge').innerText = `Верно: ${c}`;
     document.getElementById('wrongBadge').innerText = `Ошибок: ${w}`;
+
     renderQuestionTabs();
     renderQuestion();
   }
@@ -408,25 +431,7 @@
     }
   }
 
-  function useInternalFallback() {
-    // Встроенный демо-билет на случай полной блокировки сети
-    tickets[1] = [
-      {
-        num: 1,
-        title: "В каком случае водитель совершит вынужденную остановку?",
-        answers: [
-          { answer_text: "Остановившись перед перекрестком, чтобы уступить дорогу", is_correct: false },
-          { answer_text: "Остановившись на проезжей части из-за технической неисправности автомобиля", is_correct: true },
-          { answer_text: "Остановившись в месте, где запрещена стоянка", is_correct: false }
-        ],
-        comment: "Пункт 1.2 ПДД: вынужденная остановка — прекращение движения из-за технической неисправности, опасности или состояния водителя/пассажира."
-      }
-    ];
-    renderTicketSelector();
-    selectTicket(1);
-  }
-
-  window.addEventListener('DOMContentLoaded', loadData);
+  window.addEventListener('DOMContentLoaded', loadQuestions);
 </script>
 </body>
 </html>
