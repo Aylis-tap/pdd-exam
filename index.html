@@ -193,6 +193,17 @@
       padding: 4rem 1rem;
       color: var(--text-muted);
     }
+    .loader {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      border: 3px solid #334155;
+      border-radius: 50%;
+      border-top-color: #3b82f6;
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -207,7 +218,10 @@
 </header>
 
 <main>
-  <div id="loading-state">Загрузка всех 40 официальных билетов...</div>
+  <div id="loading-state">
+    <div class="loader"></div>
+    <div id="loading-msg">Загрузка официальных билетов...</div>
+  </div>
 
   <div id="app" style="display: none;">
     <div class="ticket-selector" id="ticketList"></div>
@@ -237,62 +251,87 @@
   let currentQuestionIndex = 0;
   let userAnswers = {};
 
-  // Прямой запрос к репозиторию с гарантированной разблокировкой CORS через jsDelivr
-  async function loadQuestions() {
+  const TARGET_URL = 'https://raw.githubusercontent.com/Blind4Basics/PDD_Russia/master/data/abm.json';
+
+  async function loadData() {
+    const msg = document.getElementById('loading-msg');
+    let raw = null;
+
+    // Способ 1: Прямой запрос
+    try {
+      msg.innerText = 'Загрузка официальной базы (попытка 1)...';
+      const r = await fetch(TARGET_URL);
+      if (r.ok) raw = await r.json();
+    } catch (e) {}
+
+    // Способ 2: Через прокси-шлюз AllOrigins (обходит любые CORS-блокировки)
+    if (!raw) {
+      try {
+        msg.innerText = 'Подключение через CORS-шлюз...';
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(TARGET_URL)}`;
+        const r = await fetch(proxyUrl);
+        if (r.ok) raw = await r.json();
+      } catch (e) {}
+    }
+
+    // Способ 3: Через второй открытый шлюз corsproxy
+    if (!raw) {
+      try {
+        msg.innerText = 'Резервный канал загрузки...';
+        const proxyUrl2 = `https://corsproxy.io/?url=${encodeURIComponent(TARGET_URL)}`;
+        const r = await fetch(proxyUrl2);
+        if (r.ok) raw = await r.json();
+      } catch (e) {}
+    }
+
+    if (!raw || !Array.isArray(raw)) {
+      document.getElementById('loading-state').innerHTML = 
+        '<span style="color:#ef4444">Не удалось подключиться к серверу с вопросами. Попробуйте обновить страницу еще раз.</span>';
+      return;
+    }
+
     for (let t = 1; t <= 40; t++) {
       tickets[t] = [];
     }
 
-    try {
-      // Рабочее открытое зеркало с полными билетами и официальными картинками
-      const res = await fetch('https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/abm.json');
-      const data = await res.json();
+    raw.forEach(item => {
+      let t = 0;
+      if (item.ticket_number) t = parseInt(item.ticket_number, 10);
+      else if (item.ticket) t = parseInt(item.ticket.replace(/\D/g, ''), 10);
 
-      data.forEach(item => {
-        // Извлекаем номер билета и вопроса из полей "Билет 1" или чисел
-        let t = 0;
-        if (item.ticket_number) t = parseInt(item.ticket_number, 10);
-        else if (item.ticket) t = parseInt(item.ticket.replace(/\D/g, ''), 10);
+      let q = 0;
+      if (item.question_number) q = parseInt(item.question_number, 10);
+      else if (item.number) q = parseInt(item.number.replace(/\D/g, ''), 10);
 
-        let q = 0;
-        if (item.question_number) q = parseInt(item.question_number, 10);
-        else if (item.number) q = parseInt(item.number.replace(/\D/g, ''), 10);
-
-        // Отбираем строго первые 10 вопросов из 40 билетов
-        if (t >= 1 && t <= 40 && q >= 1 && q <= 10) {
-          // Формирование ссылки на картинку
-          let imgSrc = '';
-          if (item.image && !item.image.includes('no_image') && item.image.trim() !== '') {
-            let cleanImg = item.image.replace(/^\.?\//, '');
-            imgSrc = 'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/' + cleanImg;
-          }
-
-          tickets[t].push({
-            num: q,
-            title: item.title || item.question || '',
-            image: imgSrc,
-            answers: item.answers || [],
-            correct: item.correct_answer,
-            comment: item.comment || item.answer_tip || ''
-          });
+      // Оставляем строго 1–10 вопросы для всех 40 билетов
+      if (t >= 1 && t <= 40 && q >= 1 && q <= 10) {
+        let imgSrc = '';
+        if (item.image && !item.image.includes('no_image') && item.image.trim() !== '') {
+          let cleanImg = item.image.replace(/^\.?\//, '');
+          // Картинки берем через надежный CDN jsdelivr
+          imgSrc = 'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/' + cleanImg;
         }
-      });
 
-      // Сортировка вопросов с 1 по 10
-      for (let t = 1; t <= 40; t++) {
-        tickets[t].sort((a, b) => a.num - b.num);
+        tickets[t].push({
+          num: q,
+          title: item.title || item.question || '',
+          image: imgSrc,
+          answers: item.answers || [],
+          correct: item.correct_answer,
+          comment: item.comment || item.answer_tip || ''
+        });
       }
+    });
 
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-
-      renderTicketSelector();
-      selectTicket(1);
-    } catch (e) {
-      console.error(e);
-      document.getElementById('loading-state').innerHTML = 
-        '<span style="color:#ef4444">Ошибка загрузки базы. Проверьте соединение с интернетом и обновите страницу.</span>';
+    for (let t = 1; t <= 40; t++) {
+      tickets[t].sort((a, b) => a.num - b.num);
     }
+
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    renderTicketSelector();
+    selectTicket(1);
   }
 
   function renderTicketSelector() {
@@ -348,7 +387,6 @@
     const q = list[currentQuestionIndex];
     if (!q) return;
 
-    // Картинка
     const mediaBox = document.getElementById('mediaBox');
     const img = document.getElementById('qImg');
 
@@ -360,13 +398,10 @@
       mediaBox.classList.add('empty');
     }
 
-    // Текст
     document.getElementById('qTitle').innerText = `${currentQuestionIndex + 1}. ${q.title}`;
 
-    // Варианты ответов
     const ansList = document.getElementById('ansList');
     ansList.innerHTML = '';
-
     const state = userAnswers[`${currentTicket}-${currentQuestionIndex}`];
 
     q.answers.forEach((ans, idx) => {
@@ -389,7 +424,6 @@
       ansList.appendChild(btn);
     });
 
-    // Пояснение
     const com = document.getElementById('commentBox');
     if (state && q.comment) {
       com.innerHTML = q.comment;
@@ -398,7 +432,6 @@
       com.style.display = 'none';
     }
 
-    // Состояние кнопок Назад / Вперед
     document.getElementById('prevBtn').disabled = (currentQuestionIndex === 0);
     document.getElementById('nextBtn').disabled = (currentQuestionIndex === 9);
   }
@@ -431,7 +464,7 @@
     }
   }
 
-  window.addEventListener('DOMContentLoaded', loadQuestions);
+  window.addEventListener('DOMContentLoaded', loadData);
 </script>
 </body>
 </html>
