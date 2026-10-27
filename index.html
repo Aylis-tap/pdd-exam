@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Экзамен ПДД 2026 (Кат. B) — Вопросы 1–10 из всех 40 билетов</title>
+  <title>Экзамен ПДД 2026 (Кат. B) — 40 билетов</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -16,189 +16,47 @@
       --wrong: #ef4444;
       --border: #334155;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
-
-    header {
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
+    header { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
     .logo { font-size: 1.25rem; font-weight: 700; color: #60a5fa; }
     .nav-stats { display: flex; gap: 0.75rem; font-size: 0.9rem; }
-    .badge {
-      padding: 0.35rem 0.75rem;
-      border-radius: 9999px;
-      background: #334155;
-      color: #e2e8f0;
-      font-weight: 500;
-    }
+    .badge { padding: 0.35rem 0.75rem; border-radius: 9999px; background: #334155; color: #e2e8f0; font-weight: 500; }
     .badge.success { background: #064e3b; color: #6ee7b7; }
     .badge.danger { background: #7f1d1d; color: #fca5a5; }
-
-    main {
-      flex: 1;
-      max-width: 860px;
-      width: 100%;
-      margin: 1.5rem auto;
-      padding: 0 1rem 2rem;
-    }
-
-    .ticket-selector {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-      gap: 0.4rem;
-      margin-bottom: 1.5rem;
-    }
-    .ticket-btn {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.5rem 0.25rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.85rem;
-      text-align: center;
-      transition: all 0.15s;
-    }
+    main { flex: 1; max-width: 860px; width: 100%; margin: 1.5rem auto; padding: 0 1rem 2rem; }
+    .ticket-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 0.4rem; margin-bottom: 1.5rem; }
+    .ticket-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 0.25rem; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; text-align: center; }
     .ticket-btn:hover { background: #334155; }
     .ticket-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-
-    .question-tabs {
-      display: flex;
-      gap: 0.4rem;
-      margin-bottom: 1.25rem;
-      overflow-x: auto;
-      padding-bottom: 0.4rem;
-    }
-    .q-tab {
-      flex: 1;
-      min-width: 38px;
-      height: 38px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      user-select: none;
-    }
+    .question-tabs { display: flex; gap: 0.4rem; margin-bottom: 1.25rem; overflow-x: auto; padding-bottom: 0.4rem; }
+    .q-tab { flex: 1; min-width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); user-select: none; }
     .q-tab.active { border-color: #60a5fa; color: white; outline: 2px solid #60a5fa; }
     .q-tab.correct { background: var(--correct); color: white; border-color: var(--correct); }
     .q-tab.wrong { background: var(--wrong); color: white; border-color: var(--wrong); }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-
-    .q-media {
-      width: 100%;
-      background: #0b1120;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      min-height: 220px;
-    }
-    .q-media img {
-      max-width: 100%;
-      max-height: 360px;
-      display: block;
-      object-fit: contain;
-    }
+    .card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    .q-media { width: 100%; background: #0b1120; display: flex; justify-content: center; align-items: center; border-bottom: 1px solid var(--border); min-height: 220px; }
+    .q-media img { max-width: 100%; max-height: 360px; display: block; object-fit: contain; }
     .q-media.empty { display: none; }
-
     .q-body { padding: 1.5rem; }
-    .q-title {
-      font-size: 1.1rem;
-      line-height: 1.5;
-      margin-bottom: 1.5rem;
-      font-weight: 600;
-    }
-
+    .q-title { font-size: 1.1rem; line-height: 1.5; margin-bottom: 1.5rem; font-weight: 600; }
     .answers { display: flex; flex-direction: column; gap: 0.65rem; }
-    .ans-btn {
-      background: #182234;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 0.85rem 1.1rem;
-      border-radius: 8px;
-      text-align: left;
-      cursor: pointer;
-      font-size: 0.95rem;
-      line-height: 1.4;
-      transition: background 0.15s;
-    }
-    .ans-btn:hover:not(:disabled) {
-      background: #23334d;
-      border-color: #475569;
-    }
-    .ans-btn.correct {
-      background: rgba(16, 185, 129, 0.25) !important;
-      border-color: var(--correct) !important;
-      color: #6ee7b7 !important;
-    }
-    .ans-btn.wrong {
-      background: rgba(239, 68, 68, 0.25) !important;
-      border-color: var(--wrong) !important;
-      color: #fca5a5 !important;
-    }
-
-    .comment-box {
-      margin-top: 1.25rem;
-      padding: 1rem 1.25rem;
-      background: #0f172a;
-      border-left: 4px solid var(--accent);
-      border-radius: 4px;
-      font-size: 0.9rem;
-      color: #cbd5e1;
-      line-height: 1.5;
-      display: none;
-    }
-
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 1.25rem;
-    }
-    .btn {
-      padding: 0.6rem 1.25rem;
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
+    .ans-btn { background: #182234; border: 1px solid var(--border); color: var(--text); padding: 0.85rem 1.1rem; border-radius: 8px; text-align: left; cursor: pointer; font-size: 0.95rem; line-height: 1.4; }
+    .ans-btn:hover:not(:disabled) { background: #23334d; border-color: #475569; }
+    .ans-btn.correct { background: rgba(16, 185, 129, 0.25) !important; border-color: var(--correct) !important; color: #6ee7b7 !important; }
+    .ans-btn.wrong { background: rgba(239, 68, 68, 0.25) !important; border-color: var(--wrong) !important; color: #fca5a5 !important; }
+    .comment-box { margin-top: 1.25rem; padding: 1rem 1.25rem; background: #0f172a; border-left: 4px solid var(--accent); border-radius: 4px; font-size: 0.9rem; color: #cbd5e1; line-height: 1.5; display: none; }
+    .controls { display: flex; justify-content: space-between; margin-top: 1.25rem; }
+    .btn { padding: 0.6rem 1.25rem; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
     .btn:hover { background: var(--accent-hover); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    #loading-state {
-      text-align: center;
-      padding: 4rem 1rem;
-      color: var(--text-muted);
-    }
+    #loader { text-align: center; padding: 4rem 1rem; color: var(--text-muted); }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">Экзамен ПДД (Вопросы 1–10 из всех 40 билетов)</div>
+  <div class="logo">Экзамен ПДД (Билеты 1–40, вопросы 1–10)</div>
   <div class="nav-stats">
     <span class="badge" id="ticketBadge">Билет 1 / 40</span>
     <span class="badge success" id="correctBadge">Верно: 0</span>
@@ -207,7 +65,7 @@
 </header>
 
 <main>
-  <div id="loading-state">Загрузка официальной базы ГИБДД...</div>
+  <div id="loader">Загрузка базы вопросов...</div>
 
   <div id="app" style="display: none;">
     <div class="ticket-selector" id="ticketList"></div>
@@ -215,7 +73,7 @@
 
     <div class="card">
       <div class="q-media" id="mediaBox">
-        <img id="qImg" src="" alt="Иллюстрация к вопросу">
+        <img id="qImg" src="" alt="Иллюстрация к вопросу" onerror="this.parentElement.classList.add('empty')">
       </div>
       <div class="q-body">
         <div class="q-title" id="qTitle"></div>
@@ -237,55 +95,45 @@
   let currentQuestionIndex = 0;
   let userAnswers = {};
 
-  // Функция обратного вызова JSONP: загружает официальную базу без каких-либо сетевых ошибок CORS
-  window.initPDD = function(data) {
-    if (!data || !Array.isArray(data)) return;
+  async function init() {
+    try {
+      const res = await fetch('./pdd.json');
+      const raw = await res.json();
 
-    for (let t = 1; t <= 40; t++) {
-      tickets[t] = [];
-    }
+      for (let t = 1; t <= 40; t++) tickets[t] = [];
 
-    data.forEach(item => {
-      // Номер билета
-      let t = 0;
-      if (item.ticket_number) t = parseInt(item.ticket_number, 10);
-      else if (item.ticket) t = parseInt(String(item.ticket).replace(/\D/g, ''), 10);
+      raw.forEach(item => {
+        let t = parseInt(item.ticket_number || (item.ticket && item.ticket.replace(/\D/g, '')) || 0, 10);
+        let q = parseInt(item.question_number || (item.number && item.number.replace(/\D/g, '')) || 0, 10);
 
-      // Номер вопроса
-      let q = 0;
-      if (item.question_number) q = parseInt(item.question_number, 10);
-      else if (item.number) q = parseInt(String(item.number).replace(/\D/g, ''), 10);
+        if (t >= 1 && t <= 40 && q >= 1 && q <= 10) {
+          let imgSrc = '';
+          if (item.image && !item.image.includes('no_image') && item.image.trim() !== '') {
+            imgSrc = 'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/' + item.image.replace(/^\.?\//, '');
+          }
 
-      // Оставляем строго вопросы 1–10 из всех 40 билетов (всего 400 вопросов)
-      if (t >= 1 && t <= 40 && q >= 1 && q <= 10) {
-        let imgSrc = '';
-        if (item.image && !item.image.includes('no_image') && item.image.trim() !== '') {
-          let cleanImg = item.image.replace(/^\.?\//, '');
-          imgSrc = 'https://cdn.jsdelivr.net/gh/Blind4Basics/PDD_Russia@master/data/' + cleanImg;
+          tickets[t].push({
+            num: q,
+            title: item.title || item.question || '',
+            image: imgSrc,
+            answers: item.answers || [],
+            correct: item.correct_answer,
+            comment: item.comment || item.answer_tip || item.description || ''
+          });
         }
+      });
 
-        tickets[t].push({
-          num: q,
-          title: item.title || item.question || '',
-          image: imgSrc,
-          answers: item.answers || [],
-          correct: item.correct_answer,
-          comment: item.comment || item.answer_tip || item.description || ''
-        });
-      }
-    });
+      for (let t = 1; t <= 40; t++) tickets[t].sort((a, b) => a.num - b.num);
 
-    // Сортировка по номерам 1–10
-    for (let t = 1; t <= 40; t++) {
-      tickets[t].sort((a, b) => a.num - b.num);
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+
+      renderTicketSelector();
+      selectTicket(1);
+    } catch (e) {
+      document.getElementById('loader').innerHTML = '<span style="color:#ef4444">Файл pdd.json еще не создан. Запустите Action на шаге 2.</span>';
     }
-
-    document.getElementById('loading-state').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-
-    renderTicketSelector();
-    selectTicket(1);
-  };
+  }
 
   function renderTicketSelector() {
     const box = document.getElementById('ticketList');
@@ -302,11 +150,7 @@
   function selectTicket(num) {
     currentTicket = num;
     currentQuestionIndex = 0;
-
-    document.querySelectorAll('.ticket-btn').forEach((b, idx) => {
-      b.classList.toggle('active', (idx + 1) === num);
-    });
-
+    document.querySelectorAll('.ticket-btn').forEach((b, idx) => b.classList.toggle('active', (idx + 1) === num));
     document.getElementById('ticketBadge').innerText = `Билет ${currentTicket} / 40`;
     renderQuestionTabs();
     renderQuestion();
@@ -315,17 +159,12 @@
   function renderQuestionTabs() {
     const list = document.getElementById('tabsList');
     list.innerHTML = '';
-
     for (let i = 0; i < 10; i++) {
       const tab = document.createElement('div');
       tab.className = 'q-tab' + (i === currentQuestionIndex ? ' active' : '');
       tab.innerText = i + 1;
-
       const state = userAnswers[`${currentTicket}-${i}`];
-      if (state) {
-        tab.classList.add(state.isCorrect ? 'correct' : 'wrong');
-      }
-
+      if (state) tab.classList.add(state.isCorrect ? 'correct' : 'wrong');
       tab.onclick = () => {
         currentQuestionIndex = i;
         renderQuestionTabs();
@@ -340,10 +179,8 @@
     const q = list[currentQuestionIndex];
     if (!q) return;
 
-    // Схема / картинка
     const mediaBox = document.getElementById('mediaBox');
     const img = document.getElementById('qImg');
-
     if (q.image) {
       img.src = q.image;
       mediaBox.classList.remove('empty');
@@ -352,10 +189,7 @@
       mediaBox.classList.add('empty');
     }
 
-    // Вопрос
     document.getElementById('qTitle').innerText = `${currentQuestionIndex + 1}. ${q.title}`;
-
-    // Варианты ответов
     const ansList = document.getElementById('ansList');
     ansList.innerHTML = '';
     const state = userAnswers[`${currentTicket}-${currentQuestionIndex}`];
@@ -363,11 +197,8 @@
     q.answers.forEach((ans, idx) => {
       const btn = document.createElement('button');
       btn.className = 'ans-btn';
-      btn.innerText = (ans.answer_text || ans.text || ans);
-
-      const isCorrect = (ans.is_correct !== undefined) 
-        ? ans.is_correct 
-        : (idx + 1 === parseInt(q.correct, 10));
+      btn.innerText = ans.answer_text || ans.text || ans;
+      const isCorrect = (ans.is_correct !== undefined) ? ans.is_correct : (idx + 1 === parseInt(q.correct, 10));
 
       if (state) {
         btn.disabled = true;
@@ -376,11 +207,9 @@
       } else {
         btn.onclick = () => handleChoice(idx, isCorrect);
       }
-
       ansList.appendChild(btn);
     });
 
-    // Официальное пояснение
     const com = document.getElementById('commentBox');
     if (state && q.comment) {
       com.innerHTML = q.comment;
@@ -395,12 +224,10 @@
 
   function handleChoice(idx, isCorrect) {
     userAnswers[`${currentTicket}-${currentQuestionIndex}`] = { selected: idx, isCorrect };
-
     let c = 0, w = 0;
     Object.values(userAnswers).forEach(v => v.isCorrect ? c++ : w++);
     document.getElementById('correctBadge').innerText = `Верно: ${c}`;
     document.getElementById('wrongBadge').innerText = `Ошибок: ${w}`;
-
     renderQuestionTabs();
     renderQuestion();
   }
@@ -420,23 +247,8 @@
       renderQuestion();
     }
   }
-</script>
 
-<!-- Безопасное подключение базы через GitHub API без блокировок -->
-<script src="https://api.github.com/repos/Blind4Basics/PDD_Russia/contents/data/abm.json?callback=loadViaApi"></script>
-
-<script>
-  function loadViaApi(response) {
-    try {
-      const jsonStr = decodeURIComponent(escape(atob(response.data.content)));
-      const data = JSON.parse(jsonStr);
-      window.initPDD(data);
-    } catch (e) {
-      console.error(e);
-      document.getElementById('loading-state').innerHTML = 
-        '<span style="color:#ef4444">Ошибка разбора данных. Попробуйте обновить страницу.</span>';
-    }
-  }
+  window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
